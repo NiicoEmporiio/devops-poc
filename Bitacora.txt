@@ -1,0 +1,221 @@
+# 🧾 Bitácora de Implementación – Entorno DevOps (HESK + Zabbix)
+
+---
+
+## 📅 Día 1 – Preparación del entorno
+
+### 🐳 Instalación de herramientas
+
+Se configuró el entorno local con:
+
+* Docker
+* Docker Compose
+
+---
+
+## 📅 Día 1 – Despliegue de HESK
+
+### 🧱 Infraestructura
+
+Se creó un entorno dockerizado con:
+
+* Contenedor Web (Apache + PHP)
+* Contenedor MySQL
+* Red interna Docker (`hesk_net`)
+* Volumen persistente para base de datos
+
+---
+
+### ⚙️ Configuración de base de datos
+
+Variables utilizadas:
+
+* Host: `db`
+* Base de datos: `hesk`
+* Usuario: `heskuser`
+* Contraseña: `heskpass`
+
+---
+
+### 🌐 Instalación de HESK
+
+* Acceso vía: http://localhost:8080/install
+* Se completó el asistente de instalación
+* Se creó usuario administrador
+
+---
+
+### 🔐 Post-instalación
+
+Se eliminó la carpeta `/install` por seguridad:
+
+```bash
+docker exec -it hesk_web bash
+rm -rf /var/www/html/install
+```
+
+---
+
+### ✅ Validación
+
+* Acceso a http://localhost:8080/admin
+* Login correcto
+* Panel funcional
+
+---
+
+## 📅 Día 2 – Integración de Zabbix
+
+### 🧱 Infraestructura agregada
+
+Se incorporaron nuevos servicios:
+
+* `zabbix-server`
+* `zabbix-web`
+* `zabbix-db` (MySQL 8)
+* `zabbix-agent`
+
+---
+
+### ⚠️ Problemas encontrados
+
+* Error de base de datos en Zabbix
+* Inicialización incompleta
+
+---
+
+### 🛠️ Solución aplicada
+
+* Eliminación de volúmenes (`docker compose down -v`)
+* Reconfiguración de MySQL
+* Reinicio limpio del stack
+
+---
+
+### ✅ Validación
+
+* Acceso a http://localhost:8081
+* Login con:
+
+  * Usuario: Admin
+  * Password: zabbix
+
+---
+
+## 📅 Día 2 – Monitoreo de HESK
+
+---
+
+### 🌐 Configuración de Web Scenario
+
+Se creó un escenario:
+
+* Nombre: `HESK Login Check`
+* URL monitoreada:
+
+  * `http://hesk_web/admin/index.php`
+* Intervalo: 30s
+* Código esperado: 200
+
+---
+
+### 🔍 Métricas obtenidas
+
+* Código HTTP
+* Tiempo de respuesta
+* Velocidad de descarga
+* Estado del escenario
+
+---
+
+### ⚠️ Problemas encontrados
+
+* Redirección HTTP 301
+* Resolución DNS interna
+* Delay en actualización de métricas
+
+---
+
+### 🛠️ Soluciones aplicadas
+
+* Ajuste de URL a `/admin/index.php`
+* Validación de red Docker (`hesk_web`)
+* Uso de métricas correctas (`Failed step`)
+
+---
+
+## 📅 Día 2 – Implementación de Triggers
+
+---
+
+### 🔴 Trigger: Caída del sistema
+
+Expresión:
+
+```
+last(/HESK/web.test.fail[HESK Login Check])>0
+```
+
+---
+
+### 🟡 Trigger: Lentitud
+
+Configurado mediante constructor sobre:
+
+* Item: Response time
+* Condición: `> 2s`
+
+---
+
+### 🧪 Pruebas realizadas
+
+#### Simulación de caída
+
+```bash
+docker stop hesk_web
+```
+
+Resultado:
+
+* Trigger "HESK down" → ACTIVADO
+
+---
+
+#### Recuperación
+
+```bash
+docker start hesk_web
+```
+
+Resultado:
+
+* Sistema vuelve a estado OK
+
+---
+
+## ✅ Estado actual del sistema
+
+* HESK operativo
+* Zabbix operativo
+* Monitoreo activo
+* Triggers funcionando correctamente
+* Alertas en tiempo real
+
+---
+
+## 🧠 Conclusión técnica
+
+Se implementó un entorno completo de monitoreo:
+
+* Infraestructura dockerizada
+* Observabilidad mediante Zabbix
+* Monitoreo HTTP del endpoint crítico (login)
+* Alertas basadas en disponibilidad
+
+---
+
+## 🚀 Próximos pasos
+
+* Implementación de CI/CD
+* Automatización de creación de categorías
+* Integración con repositorio Git
